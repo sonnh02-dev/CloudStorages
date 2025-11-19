@@ -126,32 +126,36 @@ cd CloudStorages.Server
 
 - For AWS S3 :
 
-  - Create bucket
-    ![alt text](image-6.png)
-  - Configure CORS
-    ![alt text](image.png)
+  - Create bucket  
+    ![AWS S3 Bucket](docs/images/aws-s3-bucket.png)
+
+  - Configure CORS  
+    ![AWS S3 CORS](docs/images/aws-s3-cors.png)
 
 - For Azure Blob :
 
-  - Create storage account , container
-    ![alt text](image-5.png)
+  - Create storage account, container  
+    ![Azure Blob Container](docs/images/azure-blob-container.png)
 
-  - Configure CORS
-    ![alt text](image-1.png)
+  - Configure CORS  
+    ![Azure Blob CORS](docs/images/azure-blob-cors.png)
 
-### 5.Retrieve and store secrets in storage providers
+---
+
+### 5. Retrieve and store secrets in storage providers
 
 - Retrieve secrets
 
-  - AWS S3: retrieve the access key and secret key from AWS IAM. If the secret key has been lost, generate a new one.
-    ![alt text](image-3.png)
-  - Azure Blob: retrieve the connection string from Azure Blob Access Keys.
-    ![alt text](image-2.png)
+  - **AWS S3**: retrieve the access key and secret key from AWS IAM. If the secret key has been lost, generate a new one.  
+    ![AWS IAM Keys](docs/images/aws-iam-keys.png)
+
+  - **Azure Blob**: retrieve the connection string from Azure Blob Access Keys.  
+    ![Azure Blob Keys](docs/images/azure-blob-keys.png)
 
 - Store Secrets in Azure Key Vault
 
-  - Set secret values in Azure Key Vault
-    ![alt text](image-4.png)
+  - Set secret values in Azure Key Vault  
+    ![Azure Key Vault Secrets](docs/images/azure-keyvault-secrets.png)
 
   - Secrets must follow this naming pattern for automatic configuration mapping:
     ```
@@ -159,6 +163,7 @@ cd CloudStorages.Server
     AwsS3--SecretKey
     AzureBlob--ConnectionString
     ```
+
 
 ### 6. Application configuration
 
