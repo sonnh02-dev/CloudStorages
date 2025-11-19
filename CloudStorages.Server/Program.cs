@@ -28,14 +28,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors();
 
-// Load secrets từ Azure Key Vault vào Configuration
+// Load secrets from Azure Key Vault into Configuration
 var keyVaultName = builder.Configuration["KeyVaultName"];
 var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
 builder.Configuration.AddAzureKeyVault(keyVaultUri, new DefaultAzureCredential());
 
-// Tự động merge appsettings.json + Key Vault secrets 
-// Rồi bind vào lớp cấu hình AwsS3Settings
+// Auto-merge config from appsettings.json and key vault
+// Key vault secrets name must follow "AwsS3--AccessKey" format to map into AwsS3Settings
+
 builder.Services.Configure<AwsS3Settings>(
+
     builder.Configuration.GetSection("AwsS3"));
 builder.Services.Configure<AzureBlobSettings>
    (builder.Configuration.GetSection("AzureBlob"));

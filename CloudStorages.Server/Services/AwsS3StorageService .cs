@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text;
+using FileInfo = CloudStorages.Server.Dtos.Responses.FileInfo;
 
 namespace CloudStorages.Server.Services
 {
@@ -28,7 +29,7 @@ namespace CloudStorages.Server.Services
             _bucketName = options.Value.BucketName;
         }
         //Upload trực tiếp lên S3 (dùng Pre-signed URL)
-        public async Task<GetUploadUrlResponse> GetUploadUrl(GetUploadUrlRequest request)
+        public GetUploadUrlResponse GetUploadUrl(GetUploadUrlRequest request)
         {
             var objectKey = PathHelper.BuildKey(request.Prefix);
             var preSignedRequest = new GetPreSignedUrlRequest
@@ -38,6 +39,8 @@ namespace CloudStorages.Server.Services
                 Verb = HttpVerb.PUT,
                 Expires = DateTime.UtcNow.AddMinutes(request.ExpiresInMinutes),
                 ContentType = request.ContentType,
+                // Muốn enforce Content-Type hoặc metadata, phải set ở server khi ký và client khi upload.
+                //Với Azure Blob, SAS không ràng buộc Content-Type, nên chỉ cần client set khi upload.
                 Metadata = { ["file-name"] = Uri.EscapeDataString(request.FileName) }
 
             };
@@ -96,14 +99,14 @@ namespace CloudStorages.Server.Services
         }
 
 
-        public async Task<FileStreamResult> DownloadFileAsync(string key)
+        public async Task<FileStreamResult> DownloadFileAsync(string fileKey)
         {
 
 
             var response = await _s3Client.GetObjectAsync(new GetObjectRequest
             {
                 BucketName = _bucketName,
-                Key = key
+                Key = fileKey
             });
 
             var fileName = Uri.UnescapeDataString(response.Metadata["file-name"]);
@@ -125,7 +128,7 @@ namespace CloudStorages.Server.Services
 
             };
 
-            var files = new List<S3ObjectResponse>();
+            var files = new List<FileInfo>();
             var listResponse = await _s3Client.ListObjectsV2Async(listRequest);
 
             foreach (var obj in listResponse.S3Objects.Where(o => !o.Key.EndsWith("/")))
@@ -153,7 +156,7 @@ namespace CloudStorages.Server.Services
                     continue;
                 }
 
-                files.Add(new S3ObjectResponse
+                files.Add(new FileInfo
                 {
                     Key = obj.Key,
                     FileName = fileName ?? "Unnamed (no metadata)",
@@ -171,14 +174,14 @@ namespace CloudStorages.Server.Services
             };
         }
 
-        public async Task DeleteFileAsync(string key)
+        public async Task DeleteFileAsync(string fileKey)
         {
 
 
             await _s3Client.DeleteObjectAsync(new DeleteObjectRequest
             {
                 BucketName = _bucketName,
-                Key = key,
+                Key = fileKey,
             });
         }
         //=================================Bucket management===============================

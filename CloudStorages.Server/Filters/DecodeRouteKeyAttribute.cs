@@ -8,11 +8,11 @@ namespace CloudStorages.Server.Filters
     {
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            if (context.ActionArguments.ContainsKey("key"))
+            if (context.ActionArguments.ContainsKey("fileKey"))
             {
-                var key = context.ActionArguments["key"]?.ToString();
+                var key = context.ActionArguments["fileKey"]?.ToString();
                 if (!string.IsNullOrEmpty(key))
-                    context.ActionArguments["key"] = Uri.UnescapeDataString(key);
+                    context.ActionArguments["fileKey"] = Uri.UnescapeDataString(key);
             }
 
             base.OnActionExecuting(context);

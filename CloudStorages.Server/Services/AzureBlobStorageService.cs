@@ -1,4 +1,6 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
 using CloudStorages.Server.Configuration;
 using CloudStorages.Server.Dtos.Requests;
@@ -6,6 +8,8 @@ using CloudStorages.Server.Dtos.Responses;
 using CloudStorages.Server.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System.Text;
+using FileInfo = CloudStorages.Server.Dtos.Responses.FileInfo;
 
 namespace CloudStorages.Server.Services
 {
@@ -22,22 +26,16 @@ namespace CloudStorages.Server.Services
             _containerClient = blobServiceClient.GetBlobContainerClient(_containerName);
         }
 
-        public async Task<GetUploadUrlResponse> GetUploadUrl(GetUploadUrlRequest request)
+        public GetUploadUrlResponse GetUploadUrl(GetUploadUrlRequest request)
         {
             var blobKey = PathHelper.BuildKey(request.Prefix);
 
             var blobClient = _containerClient.GetBlobClient(blobKey);
-            var metadata = new Dictionary<string, string>
-             {
-                 { "FileName", request.FileName }
-             };
-            await blobClient.SetMetadataAsync(metadata);
-
             var sasBuilder = new BlobSasBuilder
             {
                 BlobContainerName = _containerName,
                 BlobName = blobKey,
-                Resource = "b",
+                Resource = "b",// 'b' for blob , 'c' for container
                 ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(request.ExpiresInMinutes),
             };
 
@@ -56,14 +54,20 @@ namespace CloudStorages.Server.Services
 
             foreach (var file in request.Files)
             {
-                var blobClient = _containerClient.GetBlobClient(file.FileName);
+                var fileKey = PathHelper.BuildKey(request.Prefix);
+                var blobClient = _containerClient.GetBlobClient(fileKey); //tạo blob mới nếu chưa tồn tại.
+
                 await using var stream = file.OpenReadStream();
-                await blobClient.UploadAsync(stream, overwrite: true);
+                var metadata = new Dictionary<string, string> {
+                    {"fileName",Uri.EscapeDataString(file.FileName)} //metadata key chỉ gồm a–z, A-Z, 0–9 và dấu gạch dưới (_)
+
+                };
+                await blobClient.UploadAsync(stream, new BlobUploadOptions { Metadata = metadata });
 
                 results.Add(new UploadFileResponse
                 {
-                    FileName = file.FileName,
-                    //Url = blobClient.Uri.ToString()
+                    Key = fileKey,
+                    FileName = file.FileName
                 });
             }
 
@@ -73,7 +77,6 @@ namespace CloudStorages.Server.Services
         public string GetDownloadUrl(GetDownloadUrlRequest request)
         {
             var blobClient = _containerClient
-
                 .GetBlobClient(request.FileKey);
 
             var sasBuilder = new BlobSasBuilder
@@ -81,60 +84,78 @@ namespace CloudStorages.Server.Services
                 BlobContainerName = _containerName,
                 BlobName = request.FileKey,
                 Resource = "b",
-                ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10)
+                ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(request.ExpiresInMinutes)
             };
             sasBuilder.SetPermissions(BlobSasPermissions.Read);
 
             return blobClient.GenerateSasUri(sasBuilder).ToString();
         }
 
-        public async Task<FileStreamResult> DownloadFileAsync(string key)
+        public async Task<FileStreamResult> DownloadFileAsync(string fileKey)
         {
-            var blobClient = _containerClient.GetBlobClient(key);
+            var blobClient = _containerClient.GetBlobClient(fileKey);
 
             var response = await blobClient.DownloadAsync();
+            var metadata = response.Value.Details.Metadata;
+            var fileName = metadata.TryGetValue("fileName", out var name) ? Uri.UnescapeDataString(name) : "unknown";
+
             var stream = response.Value.Content;
             var contentType = response.Value.Details.ContentType ?? "application/octet-stream";
 
             return new FileStreamResult(stream, contentType)
             {
-                FileDownloadName = key
+                FileDownloadName = fileName
             };
         }
+
         public async Task<GetAllFilesResponse> GetAllFilesAsync(GetAllFilesRequest request)
         {
-            var result = new List<string>();
+            var files = new List<FileInfo>();
 
-            // Lấy danh sách blob theo prefix và phân trang
-            var blobsPages = _containerClient
+            // Lấy blob theo prefix và phân trang
+            IAsyncEnumerable<Page<BlobItem>> blobPages = _containerClient
                 .GetBlobsAsync(prefix: request.Prefix)
                 .AsPages(request.ContinuationToken, request.MaxKeys);
 
-            string? nextContinuationToken = null;
+            string? continuationToken = null;
+            bool isTruncated = false;
 
-            await foreach (var page in blobsPages)
+            await foreach (Page<BlobItem> page in blobPages)
             {
-                foreach (var blobItem in page.Values)
+                foreach (BlobItem blob in page.Values)
                 {
-                    result.Add(blobItem.Name);
+                    files.Add(new FileInfo
+                    {
+                        Key = blob.Name,
+                        FileName = blob.Metadata.TryGetValue("fileName", out var metaName)
+                            ? Uri.UnescapeDataString(metaName)
+                            : "Unnamed (no metadata)",
+
+                        Size = blob.Properties.ContentLength,
+                        LastModified = blob.Properties.LastModified?.DateTime
+                    });
                 }
 
-                nextContinuationToken = page.ContinuationToken;
+                continuationToken = page.ContinuationToken;
+                isTruncated = !string.IsNullOrEmpty(continuationToken);
 
-                if (request.MaxKeys.HasValue && result.Count >= request.MaxKeys.Value)
+                // Dừng nếu đủ số lượng yêu cầu
+                if (request.MaxKeys.HasValue && files.Count >= request.MaxKeys.Value)
                     break;
             }
 
             return new GetAllFilesResponse
             {
-                //  FileNames = result,
-                ContinuationToken = nextContinuationToken
+                Files = files,
+                ContinuationToken = continuationToken,
+                IsTruncated = isTruncated
             };
         }
 
-        public async Task DeleteFileAsync(string key)
+
+        public async Task DeleteFileAsync(string fileKey)
         {
-            var blobClient = _containerClient.GetBlobClient(key);
+            var blobClient = _containerClient.GetBlobClient(fileKey);
 
             await blobClient.DeleteIfExistsAsync();
         }

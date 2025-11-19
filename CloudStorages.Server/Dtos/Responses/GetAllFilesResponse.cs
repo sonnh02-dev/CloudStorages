@@ -3,11 +3,11 @@ namespace CloudStorages.Server.Dtos.Responses
 {
     public sealed record GetAllFilesResponse
     {
-        public List<S3ObjectResponse> Files { get; init; } = new();
+        public List<FileInfo> Files { get; init; } = new();
         public string? ContinuationToken { get; init; }
         public bool? IsTruncated { get; init; } // true = còn dữ liệu
     }
-    public sealed record S3ObjectResponse
+    public sealed record FileInfo
     {
         public string Key { get; init; } = default!;
         public string FileName { get; init; } = default!;

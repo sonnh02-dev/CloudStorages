@@ -10,7 +10,7 @@ namespace CloudStorages.Server.Dtos.Requests
 
         public int? MaxKeys { get; init; }
 
-        /// Token để lấy trang kế tiếp (AWS S3 dùng ContinuationToken)
+        /// Token để lấy trang kế tiếp 
         public string? ContinuationToken { get; init; }
 
        

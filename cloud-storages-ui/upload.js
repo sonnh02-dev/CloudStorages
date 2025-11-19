@@ -45,7 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   async function getUploadPreSignedUrl(fileName, contentType) {
-    
     const response = await fetch(`${config.API_BASE_URL}/upload-url`, {
       method: "POST",
       headers: {
@@ -72,6 +71,10 @@ document.addEventListener("DOMContentLoaded", () => {
         "x-amz-meta-file-name",
         encodeURIComponent(file.name)
       );
+
+      //For azure blob
+      // xhr.setRequestHeader("x-ms-blob-type", "BlockBlob");
+      // xhr.setRequestHeader("x-ms-meta-fileName", encodeURIComponent(file.name));
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {

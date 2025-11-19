@@ -6,13 +6,13 @@ namespace CloudStorages.Server.Services
 {
     public interface IStorageService
     {
-        Task<GetUploadUrlResponse> GetUploadUrl(GetUploadUrlRequest request);
+        GetUploadUrlResponse GetUploadUrl(GetUploadUrlRequest request);
         string GetDownloadUrl(GetDownloadUrlRequest request);
 
         Task<List<UploadFileResponse>> UploadFilesAsync(UploadFilesRequest request);
-        Task<FileStreamResult> DownloadFileAsync(string key);
+        Task<FileStreamResult> DownloadFileAsync(string fileKey);
         Task<GetAllFilesResponse> GetAllFilesAsync(GetAllFilesRequest request);
-        Task DeleteFileAsync(string key);
+        Task DeleteFileAsync(string fileKey);
 
         Task<bool> CreateContainerAsync(string containerName);
         Task<IEnumerable<ContainerResponse>> GetAllContainersAsync();
