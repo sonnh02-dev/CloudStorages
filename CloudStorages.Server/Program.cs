@@ -28,17 +28,38 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors();
 
-// Load secrets from Azure Key Vault into Configuration
-var keyVaultName = builder.Configuration["KeyVaultName"];
-var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
-builder.Configuration.AddAzureKeyVault(keyVaultUri, new DefaultAzureCredential());
+var keyVaultSettings = builder.Configuration
+    .GetSection("AzureKeyVault")
+    .Get<AzureKeyVaultSettings>();
+
+var keyVaultUri = keyVaultSettings?.GetVaultUri();
+
+var clientSecret = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
+if (!string.IsNullOrEmpty(clientSecret) && builder.Environment.IsStaging())
+{
+    var credential = new ClientSecretCredential(
+        keyVaultSettings?.TenantId,
+        keyVaultSettings?.ClientId,
+        clientSecret
+    );
+    // Load secrets from Azure Key Vault into Configuration
+    builder.Configuration.AddAzureKeyVault(keyVaultUri, credential);
+}
+else
+{
+    //fallback sang Managed Identity 
+    builder.Configuration.AddAzureKeyVault(
+        keyVaultUri,
+        new DefaultAzureCredential()
+    );
+}
+
 
 // Auto-merge config from appsettings.json and key vault
 // Key vault secrets name must follow "AwsS3--AccessKey" format to map into AwsS3Settings
-
 builder.Services.Configure<AwsS3Settings>(
-
     builder.Configuration.GetSection("AwsS3"));
+
 builder.Services.Configure<AzureBlobSettings>
    (builder.Configuration.GetSection("AzureBlob"));
 
@@ -61,7 +82,7 @@ builder.Services.AddSingleton(sp =>
 
 
 builder.Services.AddScoped<IAwsS3StorageService, AwsS3StorageService>();
-builder.Services.AddScoped<IAzureBlobStorageService,AzureBlobStorageService>();
+builder.Services.AddScoped<IAzureBlobStorageService, AzureBlobStorageService>();
 
 
 var app = builder.Build();
@@ -76,7 +97,7 @@ app.UseCors(policy =>
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapControllers();
-if (app.Environment.IsDevelopment())
+if (!app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();

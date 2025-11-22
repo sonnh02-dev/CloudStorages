@@ -10,11 +10,12 @@
 - [How to run](#-how-to-run)
   - [Clone repo](#1-clone-repo)
   - [Install prerequisites](#2-install-prerequisites)
-  - [Restore dependencies](#3-restore-dependencies)
-  - [Configure storage providers](#4-configure-storage-providers)
-  - [Retrieve and store secrets](#5retrieve-and-store-secrets-in-storage-providers)
-  - [Application configuration](#6-application-configuration)
-  - [Run the API](#7-run-the-api)
+  - [Restore and build](#3-restore-and-build)
+  - [AWS setup](#4-aws-setup)
+  - [Azure setup](#5-azure-setup)
+  - [Retrieve and store secrets](#6-retrieve-and-store-secrets-in-storage-providers)
+  - [Application configuration](#7-application-configuration)
+  - [Run the API](#8-run-the-api)
 - [License](#-license)
 
 ## 📁 Project structure
@@ -117,41 +118,61 @@ cd CloudStorages.Server
   - AWS S3 Bucket
   - Azure Blob Storage account + container
 
-### 3. Restore & build
+### 3. Restore and build
 
 - `dotnet restore`
 - `dotnet build`
 
-### 4. Configure storage providers
+### 4. AWS setup
 
-- For AWS S3 :
+- AWS S3 Storage :
 
-  - Create bucket
-    ![alt text](image-6.png)
-  - Configure CORS
-    ![alt text](image.png)
+  - Create bucket  
+    ![AWS S3 Bucket](docs/images/aws-s3-bucket.png)
 
-- For Azure Blob :
+  - Configure CORS  
+    ![AWS S3 CORS](docs/images/aws-s3-cors.png)
 
-  - Create storage account , container
-    ![alt text](image-5.png)
+### 5. Azure setup
 
-  - Configure CORS
-    ![alt text](image-1.png)
+- Azure Blob Storage :
 
-### 5.Retrieve and store secrets in storage providers
+  - Create storage account, container  
+    ![Azure Blob Container](docs/images/azure-blob-container.png)
+
+  - Configure CORS  
+    ![Azure Blob CORS](docs/images/azure-blob-cors.png)
+
+- Azure Key Vault:
+
+  - Create key vault
+    ![Create Key Vault](docs/images/azure-key-vault.png)
+  - Assign Role "Key Vault Administrator" to yourself
+    ![Add Role Assignment](docs/images/azure-key-vault-iam.png)
+
+- Azure App Registration
+
+  - Create an App Registration
+
+    ![Create App Registration](docs/images/azure-app-registration.png)
+
+  - Obtain clientId, tenantId and clientSecret
+    ![Obtain App Registration Info ](docs/images/azure-app-registration-overview.png)
+
+### 6. Retrieve and store secrets in storage providers
 
 - Retrieve secrets
 
-  - AWS S3: retrieve the access key and secret key from AWS IAM. If the secret key has been lost, generate a new one.
-    ![alt text](image-3.png)
-  - Azure Blob: retrieve the connection string from Azure Blob Access Keys.
-    ![alt text](image-2.png)
+  - **AWS S3**: retrieve the access key and secret key from AWS IAM. If the secret key has been lost, generate a new one.  
+    ![AWS IAM Keys](docs/images/aws-iam-keys.png)
+
+  - **Azure Blob**: retrieve the connection string from Azure Blob Access Keys.  
+    ![Azure Blob Keys](docs/images/azure-blob-keys.png)
 
 - Store Secrets in Azure Key Vault
 
-  - Set secret values in Azure Key Vault
-    ![alt text](image-4.png)
+  - Set secret values in Azure Key Vault  
+    ![Azure Key Vault Secrets](docs/images/azure-keyvault-secrets.png)
 
   - Secrets must follow this naming pattern for automatic configuration mapping:
     ```
@@ -160,13 +181,17 @@ cd CloudStorages.Server
     AzureBlob--ConnectionString
     ```
 
-### 6. Application configuration
+### 7. Application configuration
 
 - Combine secrets with appsettings.json:
 
   ```
   {
-    "KeyVaultName": "cloud-storages-kv",
+    "AzureKeyVault": {
+     "ClientId": "308e0ee2-ca0a-4b50-94b2-8c8277375fc0",
+     "TenantId": "4d2342ef-8904-4072-843d-e895456a2451",
+     "VaultName": "cloud-storages-kv"
+     },
 
     "AwsS3": {
       "BucketName": "cloud-storages-bucket",
@@ -180,13 +205,28 @@ cd CloudStorages.Server
   }
   ```
 
-- Secrets are automatically loaded using:
+- Staging (Docker Swarm, Docker Compose, VPS,..) uses ClientSecretCredential because there is no Managed Identity :
+
+  ```
+  if (!string.IsNullOrEmpty(clientSecret) && builder.Environment.IsStaging())
+  {
+    var credential = new ClientSecretCredential(
+        keyVaultSettings?.TenantId,
+        keyVaultSettings?.ClientId,
+        clientSecret
+    );
+    // Load secrets from Azure Key Vault into Configuration
+    builder.Configuration.AddAzureKeyVault(keyVaultUri, credential);
+  }
+  ```
+
+- Production (Azure App Service, Azure Container Apps, AKS,..) uses DefaultAzureCredential to use Managed Identity safely, without needing to save secrets :
 
   ```
   builder.Configuration.AddAzureKeyVault(keyVaultUri, new DefaultAzureCredential());
   ```
 
-### 7. Run the API
+### 8. Run the API
 
 - Swagger UI will be available at:
   `https://localhost:<port>/swagger`
