@@ -13,9 +13,10 @@
   - [Restore and build](#3-restore-and-build)
   - [AWS setup](#4-aws-setup)
   - [Azure setup](#5-azure-setup)
-  - [Retrieve and store secrets](#6-retrieve-and-store-secrets-in-storage-providers)
-  - [Application configuration](#7-application-configuration)
-  - [Run the API](#8-run-the-api)
+  - [Google setup](#6-google-cloud-setup)
+  - [Retrieve and store secrets](#7-retrieve-and-store-secrets-in-storage-providers)
+  - [Application configuration](#8-application-configuration)
+  - [Run the API](#9-run-the-api)
 - [License](#-license)
 
 ## 📁 Project structure
@@ -159,7 +160,16 @@ cd CloudStorages.Server
   - Obtain clientId, tenantId and clientSecret
     ![Obtain App Registration Info ](docs/images/azure-app-registration-overview.png)
 
-### 6. Retrieve and store secrets in storage providers
+### 6. Google Cloud setup 
+ - Create project 
+    ![Create Project](docs/images/google-cloud-project.png)
+ - Create an Bucket
+    ![Create an Bucket](docs/images/google-cloud-bucket.png)
+ - Create an IAM service account** and generate a key to obtain credentials
+    ![Create IAM Service Account](docs/images/iam-service-account.png)
+    ![Create And Take Credential](docs/images/iam-service-account-key.png)
+     
+### 7. Retrieve and store secrets in storage providers
 - Retrieve secrets
 
   - **AWS S3**: retrieve the access key and secret key from AWS IAM. If the secret key has been lost, generate a new one.  
@@ -178,9 +188,10 @@ cd CloudStorages.Server
     AwsS3--AccessKey
     AwsS3--SecretKey
     AzureBlob--ConnectionString
+    GoogleCloud--Credential
     ```
 
-### 7. Application configuration
+### 8. Application configuration
 
 - Combine secrets with appsettings.json:
 
@@ -200,6 +211,10 @@ cd CloudStorages.Server
     "AzureBlob": {
       "AccountName": "cloudstoragessa",
       "ContainerName": "cloud-storages-container"
+    },
+    "GoogleCloud": {
+      "BucketName": "cloud-storages-bucket",
+      "ProjectId": "cloudstorages"
     }
   }
   ```
@@ -225,7 +240,7 @@ cd CloudStorages.Server
   builder.Configuration.AddAzureKeyVault(keyVaultUri, new DefaultAzureCredential());
   ```
 
-### 8. Run the API
+### 9. Run the API
 
 - Swagger UI will be available at:
   `https://localhost:<port>/swagger`

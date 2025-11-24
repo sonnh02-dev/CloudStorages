@@ -63,6 +63,9 @@ builder.Services.Configure<AwsS3Settings>(
 builder.Services.Configure<AzureBlobSettings>
    (builder.Configuration.GetSection("AzureBlob"));
 
+builder.Services.Configure<GoogleCloudSettings>
+   (builder.Configuration.GetSection("GoogleCloud"));
+
 // Register Amazon S3 client
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
@@ -83,6 +86,7 @@ builder.Services.AddSingleton(sp =>
 
 builder.Services.AddScoped<IAwsS3StorageService, AwsS3StorageService>();
 builder.Services.AddScoped<IAzureBlobStorageService, AzureBlobStorageService>();
+builder.Services.AddScoped<IGoogleCloudStorageService, GoogleCloudStorageService>();
 
 
 var app = builder.Build();
