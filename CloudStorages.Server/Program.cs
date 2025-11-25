@@ -28,32 +28,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors();
 
-var keyVaultSettings = builder.Configuration
-    .GetSection("AzureKeyVault")
-    .Get<AzureKeyVaultSettings>();
-
-var keyVaultUri = keyVaultSettings?.GetVaultUri();
-
-var clientSecret = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
-if (!string.IsNullOrEmpty(clientSecret) && builder.Environment.IsStaging())
-{
-    var credential = new ClientSecretCredential(
-        keyVaultSettings?.TenantId,
-        keyVaultSettings?.ClientId,
-        clientSecret
-    );
-    // Load secrets from Azure Key Vault into Configuration
-    builder.Configuration.AddAzureKeyVault(keyVaultUri, credential);
-}
-else
-{
-    //fallback sang Managed Identity 
-    builder.Configuration.AddAzureKeyVault(
-        keyVaultUri,
-        new DefaultAzureCredential()
-    );
-}
-
+// Load secrets từ Azure Key Vault vào Configuration
+var keyVaultName = builder.Configuration["KeyVaultName"];
+var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
+builder.Configuration.AddAzureKeyVault(keyVaultUri, new DefaultAzureCredential());
 
 // Auto-merge config from appsettings.json and key vault
 // Key vault secrets name must follow "AwsS3--AccessKey" format to map into AwsS3Settings
@@ -101,7 +79,7 @@ app.UseCors(policy =>
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapControllers();
-if (!app.Environment.IsProduction())
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();

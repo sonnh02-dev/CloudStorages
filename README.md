@@ -1,6 +1,6 @@
 # CloudStorages.Server
 
-- A modular and extensible .NET 7 Web API that provides unified file-storage operations across multiple providers, including Amazon S3 and Azure Blob Storage.
+- A modular and extensible .NET 7 Web API that provides unified file-storage operations across multiple providers, including Amazon S3, Azure Blob and Google Cloud Storage.
   The project implements common storage endpoints via a generic controller and provider-specific service implementations.
 
 ## Table of Contents
@@ -31,6 +31,7 @@ CloudStorages.Server/
 ├── Controllers/
 │   ├── AwsS3StorageController.cs
 │   ├── AzureBlobStorageController.cs
+│   ├── GoogleCloudStorageController.cs
 │   └── StorageController.cs               # Generic base controller
 │
 ├── Dtos/
@@ -46,8 +47,10 @@ CloudStorages.Server/
 ├── Services/
 │   ├── AwsS3StorageService.cs
 │   ├── AzureBlobStorageService.cs
+│   ├── GoogleCloudStorageService.cs
 │   ├── IAwsS3StorageService.cs
 │   ├── IAzureBlobStorageService.cs
+│   ├── IGoogleCloudStorageService.cs
 │   └── IStorageService.cs                 # Common interface
 │
 ├── Utils/
@@ -151,14 +154,7 @@ cd CloudStorages.Server
   - Assign Role "Key Vault Administrator" to yourself
     ![Add Role Assignment](docs/images/azure-key-vault-iam.png)
 
-- Azure App Registration
 
-  - Create an App Registration
-
-    ![Create App Registration](docs/images/azure-app-registration.png)
-
-  - Obtain clientId, tenantId and clientSecret
-    ![Obtain App Registration Info ](docs/images/azure-app-registration-overview.png)
 
 ### 6. Google Cloud setup 
  - Create project 

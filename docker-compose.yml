@@ -1,21 +1,18 @@
 services:
   cloudstorages.server:
-    image: sonnh02dev/cloudstorages.server:dev
+    image: cloudstorages.server:dev
     build:
       context: .
       dockerfile: CloudStorages.Server/Dockerfile
-    environment:
-      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+    
 
 
-# If you run Docker outside of Visual Studio, you must provide the client secret.
 
-# docker build -f CloudStorages.Server/Dockerfile -t sonnh02dev/cloudstorages.server:dev .
+# docker build -f CloudStorages.Server/Dockerfile -t cloudstorages.server:dev .
       
 # docker run -d --name cloudstorages-server -p 8080:80 `
 # -e ASPNETCORE_ENVIRONMENT=Development `
 # -e ASPNETCORE_URLS="http://+:80" `
-# -e AZURE_CLIENT_SECRET= 'client secret here' `
-# sonnh02dev/cloudstorages.server:dev
+# cloudstorages.server:dev
 
 
